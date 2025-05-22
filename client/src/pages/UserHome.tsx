@@ -29,7 +29,7 @@ export default function HomePage() {
   const fetchDocuments = async () => {
     setLoadingDocs(true);
     try {
-      const res = await fetch(`http://localhost:8080/documents?user_id=${userId}`);
+      const res = await fetch(`http://localhost:8080/documents/get?user_id=${userId}`);
       const data = await res.json();
       setDocuments(data);
     } catch (err) {
