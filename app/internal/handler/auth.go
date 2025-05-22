@@ -5,11 +5,15 @@ import (
 	"net/http"
 	"time"
 
-	"backend/internal/config"
 	"backend/internal/model"
 	"backend/internal/util"
+	"backend/internal/repository"
 )
 
+
+type AuthHandler struct {
+	UserRepo repository.UserRepository
+}
 
 type AuthRequest struct {
 	Username		string		`json:"username"`
@@ -18,7 +22,11 @@ type AuthRequest struct {
 }
 
 
-func Register(w http.ResponseWriter, r *http.Request) {
+func NewAuthHandler(repo repository.UserRepository) *AuthHandler {
+	return &AuthHandler{UserRepo: repo}
+}
+
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
@@ -38,7 +46,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:		time.Now(),
 	}
 
-	if err := config.DB.Create(&user).Error; err != nil {
+	if err := h.UserRepo.Create(&user); err != nil {
 		http.Error(w, "Could not create user", http.StatusBadRequest)
 		return
 	}
@@ -47,15 +55,15 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "User created"})
 }
 
-func Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	var user model.User
-	if err := config.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+	user, err := h.UserRepo.GetByUsername(req.Username)
+	if err != nil {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
@@ -65,9 +73,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now()
-	user.LastLoginAt = &now
-	config.DB.Save(&user)
+	if err := h.UserRepo.UpdateLastLogin(user); err != nil {
+		http.Error(w, "Failed to update last login", http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})

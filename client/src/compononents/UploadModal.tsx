@@ -44,7 +44,7 @@ export default function UploadModal({onClose, onSuccess, userId, workspaceId}: P
         setError(null);
 
         try {
-            const res = await fetch('http://localhost:8080/upload', {
+            const res = await fetch('http://localhost:8080/documents/upload', {
                 method: 'POST',
                 body: formData,
             });

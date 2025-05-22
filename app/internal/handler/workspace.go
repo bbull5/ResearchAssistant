@@ -4,30 +4,40 @@ import (
 	"fmt"
 	"encoding/json"
 	"net/http"
-	// "strings"
 	"strconv"
 
-	"backend/internal/config"
 	"backend/internal/model"
+	"backend/internal/repository"
 )
 
 
-func GetUserWorkspaces(w http.ResponseWriter, r *http.Request) {
+type WorkspaceHandler struct {
+	WorkspaceRepo repository.WorkspaceRepository
+}
+
+
+func NewWorkspaceHandler(repo repository.WorkspaceRepository) *WorkspaceHandler {
+	return &WorkspaceHandler{WorkspaceRepo: repo}
+}
+
+func (h *WorkspaceHandler) GetUserWorkspaces(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.URL.Query().Get("user_id")
 	if userIDStr == "" {
 		http.Error(w, "Missing user_id", http.StatusBadRequest)
 		return
 	}
 
-	userID, err := strconv.ParseUint(userIDStr, 10, 64)
+	userID64, err := strconv.ParseUint(userIDStr, 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid user_id", http.StatusBadRequest)
 		return
 	}
 
-	var workspaces []model.Workspace
-	if err := config.DB.Where("user_id = ?", userID).Find(&workspaces).Error; err != nil {
-		http.Error(w, "Failed to fetch workspaces.", http.StatusInternalServerError)
+	userID := uint(userID64)
+
+	workspaces, err := h.WorkspaceRepo.GetByUserID(userID)
+	if err != nil {
+		http.Error(w, "Failed to fetch workspaces", http.StatusInternalServerError)
 		return
 	}
 
@@ -35,7 +45,7 @@ func GetUserWorkspaces(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(workspaces)
 }
 
-func CreateWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *WorkspaceHandler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var ws model.Workspace
 	if err := json.NewDecoder(r.Body).Decode(&ws); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
@@ -47,7 +57,7 @@ func CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := config.DB.Create(&ws).Error; err != nil {
+	if err := h.WorkspaceRepo.Create(&ws); err != nil {
 		http.Error(w, "Failed to create workspace", http.StatusInternalServerError)
 		return
 	}
@@ -56,7 +66,7 @@ func CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ws)
 }
 
-func DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *WorkspaceHandler) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		ID uint `json:"id"`
 	}
@@ -66,7 +76,7 @@ func DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := config.DB.Delete(&model.Workspace{}, input.ID).Error; err != nil {
+	if err := h.WorkspaceRepo.Delete(input.ID); err != nil {
 		http.Error(w, "Failed to delete workspace", http.StatusInternalServerError)
 		return
 	}
@@ -75,10 +85,10 @@ func DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Workspace deleted")
 }
 
-func AddDocumentToWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *WorkspaceHandler) AddDocumentToWorkspace(w http.ResponseWriter, r *http.Request) {
 	type Payload struct {
 		DocumentID		uint	`json:"document_id"`
-		WorkspaceID		uint	`json:"worksapce_id"`
+		WorkspaceID		uint	`json:"workspace_id"`
 	}
 
 	var p Payload
@@ -87,7 +97,7 @@ func AddDocumentToWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := config.DB.Model(&model.Document{}).Where("id = ?", p.DocumentID).Update("workspace_id", p.WorkspaceID).Error; err != nil {
+	if err := h.WorkspaceRepo.AddDocumentToWorkspace(p.DocumentID, p.WorkspaceID); err != nil {
 		http.Error(w, "Failed to add document to workspace", http.StatusInternalServerError)
 		return
 	}
@@ -96,14 +106,18 @@ func AddDocumentToWorkspace(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Document added to workspace")
 }
 
-func RemoveDocumentFromWorkspace(w http.ResponseWriter, r *http.Request) {
-	type Payload struct {
+func (h *WorkspaceHandler) RemoveDocumentFromWorkspace(w http.ResponseWriter, r *http.Request) {
+	var p struct {
 		DocumentID		uint		`json:"document_id"`
 	}
 
-	var p Payload
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.WorkspaceRepo.RemoveDocumentFromWorkspace(p.DocumentID); err != nil {
+		http.Error(w, "Failed to remove document", http.StatusInternalServerError)
 		return
 	}
 
