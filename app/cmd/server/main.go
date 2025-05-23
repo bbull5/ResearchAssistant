@@ -34,6 +34,7 @@ func main() {
 	mux.HandleFunc("/login", authHandler.Login)
 	mux.HandleFunc("/documents/get", documentHandler.GetDocuments)
 	mux.HandleFunc("/documents/upload", documentHandler.UploadDocuments)
+	mux.HandleFunc("/documents/view", documentHandler.ViewDocument)
 	mux.HandleFunc("/workspace/create", workspaceHandler.CreateWorkspace)
 	mux.HandleFunc("/workspace/get", workspaceHandler.GetUserWorkspaces)
 	mux.HandleFunc("/workspace/delete", workspaceHandler.DeleteWorkspace)

@@ -113,3 +113,26 @@ func (h *DocumentHandler) UploadDocuments(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "Upload successful. Document ID: %d\n", doc.ID)
 }
+
+func (h *DocumentHandler) ViewDocument(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		http.Error(w, "Missing document ID", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid document ID", http.StatusBadRequest)
+		return
+	}
+
+	doc, err := h.DocRepo.GetByDocumentID(uint(id))
+	if err != nil || doc.FilePath == "" {
+		http.Error(w, "Document not found", http.StatusInternalServerError)
+		return
+	}
+
+	filePath := doc.FilePath
+	http.ServeFile(w, r, filePath)
+}
