@@ -102,7 +102,7 @@ export default function HomePage() {
           >
             Upload
           </button>
-          <Link to="/" className="hover:underline">Profile</Link>
+          <Link to="/profile" className="hover:underline">Profile</Link>
           <Link to="/" className="hover:underline">Logout</Link>
         </div>
       </nav>
