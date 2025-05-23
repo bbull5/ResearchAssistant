@@ -26,5 +26,4 @@ func ConnectDatabase() {
 	}
 
 	DB = db
-	log.Println("Database connection established.")
 }

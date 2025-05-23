@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 	"net/http"
 
 	"backend/internal/config"
@@ -14,21 +15,36 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	log.Println("Loading environment variables...")
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found or error reading it:", err)
+	} else {
+		log.Println(".env file loaded successfully")
+	}
 
+	log.Println("Connecting to database...")
 	config.ConnectDatabase()
-	config.DB.AutoMigrate(&model.User{})
-	config.DB.AutoMigrate(&model.Document{})
-	config.DB.AutoMigrate(&model.Workspace{})
+	log.Println("Database connection established")
 
+	log.Println("Running database migrations...")
+	if err := config.DB.AutoMigrate(&model.User{}, &model.Document{}, &model.Workspace{}); err != nil {
+		log.Fatalf("AutoMigrate failed: %v", err)
+	}
+	log.Println("Database migrations completed")
+
+	log.Println("Initializing repositiories and handlers...")
 	userRepo := repository.NewUserRepository(config.DB)
 	authHandler := handler.NewAuthHandler(userRepo)
+
 	workspaceRepo := repository.NewWorkspaceRepository(config.DB)
 	workspaceHandler := handler.NewWorkspaceHandler(workspaceRepo)
+
 	documentRepo := repository.NewDocumentRepository(config.DB)
 	documentHandler := handler.NewDocumentHandler(documentRepo)
 
+	log.Println("Registering routes...")
 	mux := http.NewServeMux()
+
 	mux.HandleFunc("/health", handler.HealthCheck)
 	mux.HandleFunc("/register", authHandler.Register)
 	mux.HandleFunc("/login", authHandler.Login)
@@ -41,12 +57,14 @@ func main() {
 	mux.HandleFunc("/workspace/add-document", workspaceHandler.AddDocumentToWorkspace)
 	mux.HandleFunc("/workspace/remove-document", workspaceHandler.RemoveDocumentFromWorkspace)
 
-	// Wrap with CORS middleware
+	log.Println("Applying CORS middleware...")
 	handleWithCors := middleware.EnableCORS(mux)
 
-	log.Println("Server starting at :8080")
-	err := http.ListenAndServe(":8080", handleWithCors)
-	if err != nil {
-		log.Fatal(err)
+	addr := ":8080"
+	log.Printf("Server starting at %s...\n", addr)
+	start := time.Now()
+	if err := http.ListenAndServe(addr, handleWithCors); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
 	}
+	log.Printf("Server stopped after %s\n", time.Since(start).String())
 }
