@@ -11,6 +11,7 @@ import (
 
 type DocumentRepository interface {
 	GetByUserID(userID uint) ([]model.Document, error)
+	GetByDocumentID(docID uint) (model.Document, error)
 	Save(doc *model.Document) error
 }
 
@@ -28,6 +29,12 @@ func (r *documentRepo) GetByUserID(userID uint) ([]model.Document, error) {
 	var docs []model.Document
 	err := r.db.Where("user_id = ?", userID).Find(&docs).Error
 	return docs, err
+}
+
+func (r *documentRepo) GetByDocumentID(docID uint) (model.Document, error) {
+	var doc model.Document
+	err := r.db.Where("id = ?", docID).Find(&doc).Error
+	return doc, err
 }
 
 func (r *documentRepo) Save(doc *model.Document) error {

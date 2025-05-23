@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import UploadModal from '../compononents/UploadModal';
 import CreateWorkspaceModal from '../compononents/CreateWorkspaceModal';
 import AddToWorkspaceModal from '../compononents/AddToWorkspaceModal';
+import ViewDocumentModal from '../compononents/ViewDocumentModal';
 
 
 type Document = {
@@ -10,6 +11,7 @@ type Document = {
   title: string;
   workspace_id: number;
   uploaded_at: string;
+  file_path: string;
 };
 
 type Workspace = {
@@ -23,6 +25,8 @@ export default function HomePage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
@@ -177,7 +181,15 @@ export default function HomePage() {
                       </p>
                     </div>
                     <div className="space-x-2">
-                      <button className="text-blue-600 text-sm hover:underline">View</button>
+                      <button
+                        onClick={() => {
+                          setSelectedDoc(doc)
+                          setShowViewModal(true);
+                        }}
+                        className="text-blue-600 text-sm hover:underline"
+                      >
+                        View
+                      </button>
                       <button className="text-red-600 text-sm hover:underline">Delete</button>
                     </div>
                   </li>
@@ -211,6 +223,16 @@ export default function HomePage() {
           workspaces={workspaces}
           onClose={() => setShowAddModal(false)}
           onSuccess={fetchDocuments}
+        />
+      )}
+      {showViewModal && selectedDoc && (
+        <ViewDocumentModal
+          pdfUrl={`http://localhost:8080/documents/view?id=${selectedDoc.id}`}
+          title={selectedDoc.title}
+          onClose={() => {
+            setShowViewModal(false);
+            setSelectedDoc(null);
+          }}
         />
       )}
     </div>
