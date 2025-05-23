@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import UploadModal from '../compononents/UploadModal';
 import CreateWorkspaceModal from '../compononents/CreateWorkspaceModal';
+import AddToWorkspaceModal from '../compononents/AddToWorkspaceModal';
+
 
 type Document = {
   id: number;
@@ -16,9 +18,11 @@ type Workspace = {
   created_at: string;
 };
 
+
 export default function HomePage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
@@ -108,12 +112,20 @@ export default function HomePage() {
           <div className="bg-white p-4 rounded shadow">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">Workspaces</h3>
-              <button 
-                onClick={() => setShowCreateModal(true)}
-                className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
-              >
-                Create Workspace
-              </button>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
+                >
+                  Create Workspace
+                </button>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
+                >
+                  Add to Workspace
+                </button>              
+              </div>
             </div>
             {loadingWorkspaces ? (
               <p>Loading workspaces...</p>
@@ -165,7 +177,7 @@ export default function HomePage() {
                       </p>
                     </div>
                     <div className="space-x-2">
-                      <button className="text-blue-600 text-sm hover:underline">Add to Workspace</button>
+                      <button className="text-blue-600 text-sm hover:underline">View</button>
                       <button className="text-red-600 text-sm hover:underline">Delete</button>
                     </div>
                   </li>
@@ -191,6 +203,14 @@ export default function HomePage() {
           userId={userId}
           onClose={() => setShowCreateModal(false)}
           onSuccess={fetchWorkspaces}
+        />
+      )}
+      {showAddModal && (
+        <AddToWorkspaceModal
+          documents={documents}
+          workspaces={workspaces}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={fetchDocuments}
         />
       )}
     </div>
