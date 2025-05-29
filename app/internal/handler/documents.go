@@ -95,7 +95,7 @@ func (h *DocumentHandler) UploadDocuments(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Save to file uploads directory
+	// Save to file uploads directory (test directory. Will be S3 bucket eventually)
 	filename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), handler.Filename)
 	savePath := filepath.Join("uploads", filename)
 

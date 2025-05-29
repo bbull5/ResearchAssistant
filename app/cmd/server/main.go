@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+
 func main() {
 	log.Println("Loading environment variables...")
 	if err := godotenv.Load(); err != nil {
@@ -35,16 +36,13 @@ func main() {
 	log.Println("Initializing repositiories and handlers...")
 	userRepo := repository.NewUserRepository(config.DB)
 	authHandler := handler.NewAuthHandler(userRepo)
-
 	workspaceRepo := repository.NewWorkspaceRepository(config.DB)
 	workspaceHandler := handler.NewWorkspaceHandler(workspaceRepo)
-
 	documentRepo := repository.NewDocumentRepository(config.DB)
 	documentHandler := handler.NewDocumentHandler(documentRepo)
 
 	log.Println("Registering routes...")
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("/health", handler.HealthCheck)
 	mux.HandleFunc("/register", authHandler.Register)
 	mux.HandleFunc("/login", authHandler.Login)
